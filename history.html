@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>ประวัติค่าน้ำตาล</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+    
+body {
+  font-family: 'Prompt', sans-serif;
+  background: #f2f6f3;
+  padding: 16px;
+  color: #333;
+}
+
+/* header */
+.header {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 20px;
+  position: sticky;
+  top: 0;
+  background: #f2f6f3;
+  padding-bottom: 10px;
+  z-index: 10;
+}
+
+.header span {
+  font-size: 20px;
+  cursor: pointer;
+}
+
+.header h2 {
+  font-size: 20px;
+  font-weight: 600;
+}
+
+/* card */
+.card {
+  background: #fff;
+  padding: 16px;
+  border-radius: 18px;
+  margin-bottom: 14px;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.06);
+  transition: 0.2s;
+  border-left: 5px solid #00c300; /* 🔥 เพิ่มเส้น */
+}
+
+.card:active {
+  transform: scale(0.98);
+}
+
+/* row */
+.row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+/* value */
+.value {
+  font-size: 20px;
+  font-weight: 600;
+}
+
+/* สีสถานะ */
+.high {
+  color: #e53935;
+}
+
+.normal {
+  color: #2e7d32;
+}
+
+.low {
+  color: #1e88e5;
+}
+
+/* date */
+.date {
+  font-size: 13px;
+  color: #777;
+}
+
+.mid {
+  color: #f9a825; /* เหลือง */
+}
+
+/* ปุ่มย้อนกลับ */
+.back-btn {
+  width: 40px;
+  height: 40px;
+  background: #ffffff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.back-btn:active {
+  transform: scale(0.9);
+  background: #f2f2f2;
+}
+
+/* title */
+.title {
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.note {
+  font-size: 10px;
+  color: #555;
+  margin-top: 6px;
+  padding: 6px 10px;
+  background: #f7f7f7;
+  border-radius: 10px;
+}
+
+#loading {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: #f2f6f3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+  transition: 0.3s;
+}
+
+/* spinner */
+.loader {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #ddd;
+  border-top: 4px solid #00c300;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-bottom: 12px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* text */
+.loading-text {
+  font-size: 14px;
+  color: #666;
+}
+
+</style>
+</head>
+
+<body>
+
+<div id="loading">
+  <div class="loader"></div>
+  <div class="loading-text">กำลังโหลดข้อมูล...</div>
+</div>
+
+<div class="header">
+  <div class="back-btn" onclick="goBack()">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+        <path d="M15 18L9 12L15 6" stroke="#333" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  </div>
+  <div class="title">ประวัติค่าน้ำตาล</div>
+</div>
+
+<div id="list"></div>
+
+<script>
+
+let userId = "test-user";
+
+async function loadData() {
+
+  const res = await fetch("https://script.google.com/macros/s/AKfycbxtMBEhQg4VvqCVJJOLQuZlgxBVLRtDS_wSnQjK_78bw2lmOiavpT5-VqiP7XBscec_/exec", {
+    method: "POST",
+    body: JSON.stringify({
+      action: "getSugar",
+      userId: userId
+    })
+  });
+
+  const data = await res.json();
+
+  const loading = document.getElementById("loading");
+  loading.style.opacity = "0";
+  setTimeout(() => loading.style.display = "none", 300);
+
+  const container = document.getElementById("list");
+  container.innerHTML = "";
+
+  data.reverse().forEach(item => {
+
+    const value = Number(item.value);
+
+    // 🎨 กำหนดสถานะ + สี
+    let sugarClass = "normal";
+    let label = "ปกติ";
+    let borderColor = "#2e7d32"; // เขียว
+    let bgColor = "#e8f5e9"; // เขียวอ่อน default
+
+    if (value < 70) {
+        sugarClass = "low";
+        label = "ต่ำ";
+        borderColor = "#1e88e5";
+        bgColor = "rgba(30,136,229,0.05)"; // 🔵 ฟ้าอ่อน
+    }
+    else if (value <= 130) {
+        sugarClass = "normal";
+        label = "ปกติ";
+        borderColor = "#2e7d32";
+        bgColor = "rgba(46,125,50,0.05)"; // 🟢 เขียวอ่อน
+    }
+    else if (value <= 180) {
+        sugarClass = "mid";
+        label = "เริ่มสูง";
+        borderColor = "#f9a825";
+        bgColor = "rgba(249,168,37,0.08)"; // 🟡 เหลืองอ่อน
+    }
+    else {
+        sugarClass = "high";
+        label = "สูง";
+        borderColor = "#e53935";
+        bgColor = "rgba(229,57,53,0.05)"; // 🔴 แดงอ่อน ← ตรงนี้แหละ
+    }
+
+    // 📅 วันที่
+    const d = new Date(item.date);
+    const dateStr = d.toLocaleString("th-TH", {
+      year: "numeric",
+      month: "short",
+      day: "numeric"
+    });
+
+    const div = document.createElement("div");
+    div.className = "card";
+    div.style.borderLeftColor = borderColor;
+    div.style.background = bgColor;
+
+    div.innerHTML = `
+      <div class="row date">
+        <span>📅</span>
+        <span>${dateStr}</span>
+      </div>
+
+      <div class="row">
+        <span>🩸</span>
+        <span class="value ${sugarClass}">${value} mg/dL</span>
+        <span style="
+          font-size:12px;
+          padding:3px 10px;
+          border-radius:10px;
+          color:white;
+          background:${borderColor};
+        ">${label}</span>
+      </div>
+
+      <div class="row">
+        <span>❤️</span>
+        <span>${item.bp_sys || "-"} / ${item.bp_dia || "-"}</span>
+      </div>
+
+      ${item.note ? `
+      <div class="note">
+        📝 ${item.note}
+      </div>
+      ` : ""}
+    `;
+
+    container.appendChild(div);
+
+  });
+
+}
+
+function goBack() {
+  window.history.back();
+}
+
+loadData();
+
+</script>
+
+</body>
+</html>

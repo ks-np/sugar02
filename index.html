@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <meta charset="UTF-8">
+  <title>บันทึกค่าน้ำตาล</title>
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+
+  <style>
+
+    * {
+        box-sizing: border-box;
+        font-family: 'Prompt', sans-serif;
+    }
+    
+    body {
+        margin: 0;
+        padding: 16px;
+        background: #f3f8f4;
+        color: #333;
+    }
+
+    .card {
+        background: #fff;
+        padding: 20px;
+        border-radius: 20px;
+        box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+        max-width: 420px;
+        margin: auto;
+    }
+
+    h2 {
+        text-align: center;
+        margin-bottom: 20px;
+        font-weight: 600;
+    }
+
+    label {
+        font-size: 14px;
+        font-weight: 500;
+    }
+
+    input, textarea {
+        width: 100%;
+        padding: 12px;
+        margin-top: 6px;
+        margin-bottom: 16px;
+        border-radius: 12px;
+        border: 1.5px solid #ddd;
+        font-size: 16px;
+        outline: none;
+        transition: 0.2s;
+    }
+
+    input:focus, textarea:focus {
+        border-color: #00c300;
+        box-shadow: 0 0 0 2px rgba(0,195,0,0.1);
+    }
+
+    .bp-row {
+        display: flex;
+        gap: 10px;
+    }
+
+    .bp-row input {
+        flex: 1;
+    }
+
+    button {
+        width: 100%;
+        padding: 14px;
+        border: none;
+        border-radius: 14px;
+        background: #00c300;
+        color: white;
+        font-size: 18px;
+        font-weight: 600;
+        margin-top: 10px;
+        transition: 0.2s;
+    }
+
+    button:active {
+        background: #009900;
+        transform: scale(0.96);
+    }
+
+    button.loading {
+        background: #00c300;
+        opacity: 0.7;
+        pointer-events: none;
+    }
+
+    button.pressed {
+        transform: scale(0.95);
+    }
+
+    /* 👇 spinner */
+    .spinner {
+        width: 20px;
+        height: 20px;
+        border: 3px solid #fff;
+        border-top: 3px solid transparent;
+        border-radius: 50%;
+        margin: auto;
+        animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+
+    /* 📱 Mobile scaling */
+    @media (max-width: 480px) {
+        body {
+        padding: 12px;
+        }
+
+        .card {
+        padding: 16px;
+        border-radius: 16px;
+        }
+
+        h2 {
+        font-size: 20px;
+        }
+    }
+
+    .popup {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.4);
+        display: none;
+        justify-content: center;
+        align-items: center;
+        z-index: 999;
+    }
+
+    .popup-box {
+        background: #fff;
+        padding: 24px;
+        border-radius: 20px;
+        width: 80%;
+        max-width: 300px;
+        text-align: center;
+        animation: fadeIn 0.2s ease;
+    }
+
+    .popup-box button {
+        margin-top: 16px;
+        width: 100%;
+        padding: 12px;
+        border: none;
+        border-radius: 12px;
+        background: #00c300;
+        color: white;
+        font-weight: 600;
+        font-size: 16px;
+    }
+
+    @keyframes fadeIn {
+        from { transform: scale(0.9); opacity: 0; }
+        to { transform: scale(1); opacity: 1; }
+    }
+
+  </style>
+</head>
+
+<body>
+
+<div class="card">
+  <h2>🩸 บันทึกค่าน้ำตาล</h2>
+
+  <label>ค่าน้ำตาล (mg/dL)</label>
+  <input type="number" id="value">
+
+  <label>ความดัน (mmHg)</label>
+
+  <div class="bp-row">
+    <input type="number" id="bp_sys" placeholder="ตัวบน (SYS)">
+    <input type="number" id="bp_dia" placeholder="ตัวล่าง (DIA)">
+  </div>
+
+  <label>วันที่</label>
+  <input type="date" id="date">
+
+  <label>หมายเหตุ</label>
+  <textarea id="note"></textarea>
+
+  <button id="saveBtn" onclick="saveData()">
+    <span id="btnText">บันทึก</span>
+  </button>
+
+  <button onclick="goToHistory()" style="background:#eee; color:#333;">
+    📊 ดูประวัติ
+  </button>
+
+</div>
+
+<div id="popup" class="popup">
+  <div class="popup-box">
+    <div id="popup-text">ข้อความ</div>
+    <button onclick="closePopup()">ตกลง</button>
+  </div>
+</div>
+
+<script>
+    let userId = "";
+
+    async function initLIFF() {
+        await liff.init({ liffId: "2009557696-aqCO8Dtp" });
+
+        if (!liff.isLoggedIn()) {
+        liff.login();
+        } else {
+        const profile = await liff.getProfile();
+        userId = profile.userId;
+        }
+    }
+
+    async function saveData() {
+        const value = document.getElementById("value").value;
+        const bp_sys = document.getElementById("bp_sys").value;
+        const bp_dia = document.getElementById("bp_dia").value;
+        const date = document.getElementById("date").value;
+        const note = document.getElementById("note").value;
+        const btn = document.getElementById("saveBtn");
+        const btnText = document.getElementById("btnText");
+        btn.classList.add("pressed");
+        setTimeout(() => btn.classList.remove("pressed"), 150);
+
+        // 🔄 เปิดโหมดโหลด
+        btn.classList.add("loading");
+        btnText.innerHTML = '<div class="spinner"></div>';
+
+        if ((bp_sys && !bp_dia) || (!bp_sys && bp_dia)) {
+            showPopup("กรุณากรอกความดันให้ครบทั้งตัวบนและตัวล่าง");
+
+            btn.classList.remove("loading");
+            btnText.innerHTML = "บันทึก";
+
+            return;
+        }
+
+        if (bp_sys && (bp_sys < 50 || bp_sys > 250)) {
+            showPopup("ค่าความดันตัวบนผิดปกติ");
+
+            btn.classList.remove("loading");
+            btnText.innerHTML = "บันทึก";
+
+            return;
+        }
+
+        if (!value || !date) {
+            showPopup("กรุณากรอกข้อมูลให้ครบ");
+
+            btn.classList.remove("loading");
+            btnText.innerHTML = "บันทึก";
+
+            return;
+        }
+
+        try {
+            const res = await fetch("https://script.google.com/macros/s/AKfycbxtMBEhQg4VvqCVJJOLQuZlgxBVLRtDS_wSnQjK_78bw2lmOiavpT5-VqiP7XBscec_/exec", {
+                method: "POST",
+                body: JSON.stringify({
+                action: "sugar",
+                userId: userId,
+                value: value,
+                bp_sys: bp_sys,
+                bp_dia: bp_dia,
+                date: date,
+                note: note
+                })
+            });
+
+            const text = await res.text();
+            console.log("response:", text);
+
+            showPopup("บันทึกเรียบร้อย 🎉");
+
+            btn.classList.remove("loading");
+            btnText.innerHTML = "บันทึก";
+
+            } catch (err) {
+                console.error(err);
+                showPopup("❌ บันทึกไม่สำเร็จ");
+
+            } finally {
+
+                btn.classList.remove("loading");
+                btnText.innerHTML = "บันทึก";
+            }
+
+        // reset form
+        document.getElementById("value").value = "";
+        document.getElementById("bp_sys").value = "";
+        document.getElementById("bp_dia").value = "";
+        document.getElementById("date").value = "";
+        document.getElementById("note").value = "";
+    }
+
+    function showPopup(message) {
+        document.getElementById("popup-text").innerText = message;
+        document.getElementById("popup").style.display = "flex";
+    }
+
+    function closePopup() {
+        document.getElementById("popup").style.display = "none";
+    }
+
+    function goToHistory() {
+        window.location.href = "history.html";
+    }
+
+    initLIFF();
+
+</script>
+
+</body>
+</html>
