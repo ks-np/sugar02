@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <meta charset="UTF-8">
 <title>ประวัติค่าน้ำตาล</title>
 
@@ -183,7 +184,20 @@ body {
 
 <script>
 
-let userId = "test-user";
+let userId = "";
+
+async function initLIFF() {
+  await liff.init({ liffId: "2009557696-aqCO8Dtp" });
+
+  if (!liff.isLoggedIn()) {
+    liff.login();
+  } else {
+    const profile = await liff.getProfile();
+    userId = profile.userId;
+
+    loadData(); // 👈 เรียกหลังได้ userId
+  }
+}
 
 async function loadData() {
 
@@ -292,7 +306,7 @@ function goBack() {
   window.history.back();
 }
 
-loadData();
+initLIFF();
 
 </script>
 
