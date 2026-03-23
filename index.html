@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
   <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600&display=swap" rel="stylesheet">
   <meta charset="UTF-8">
   <title>บันทึกค่าน้ำตาล</title>
@@ -280,9 +281,6 @@
             console.log("response:", text);
 
             showPopup("บันทึกเรียบร้อย 🎉");
-
-            btn.classList.remove("loading");
-            btnText.innerHTML = "บันทึก";
 
             } catch (err) {
                 console.error(err);
