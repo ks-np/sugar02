@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta charset="UTF-8">
 <title>ประวัติค่าน้ำตาล</title>
@@ -195,7 +196,9 @@ async function initLIFF() {
     const profile = await liff.getProfile();
     userId = profile.userId;
 
-    loadData(); // 👈 เรียกหลังได้ userId
+    if (!userId) userId = "test-user"; // 👈 สำคัญ
+
+    loadData();
   }
 }
 
